@@ -141,3 +141,4 @@ jobs:
         if: ${{ always() }}
         run: |
           docker logs docker_registry_proxy || true
+          docker ps -a
