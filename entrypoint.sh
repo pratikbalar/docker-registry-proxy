@@ -23,7 +23,7 @@ echo "-- end resolv"
 
 # Podman adds a "%3" to the end of the last resolver? I don't get it. Strip it out.
 export RESOLVERS=$(sed -e 's/%3//g' /etc/resolv.conf | awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' | sed 's/ *$//g')
-if [[ "${RESOLVERS}" ]]; then
+if [[ -z "${RESOLVERS}" ]]; then
     logErr "Unable to determine DNS resolvers for nginx"
     exit 66
 fi
