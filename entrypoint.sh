@@ -42,7 +42,7 @@ ALLDOMAINS=""
 
 # Interceptions map, which are the hosts that will be handled by the caching part.
 # It should list exactly the same hosts we have created certificates for -- if not, Docker will get TLS errors, of course.
-touch >/etc/nginx/docker.intercept.map
+echo -n "" >/etc/nginx/docker.intercept.map
 
 # Some hosts/registries are always needed, but others can be configured in env var REGISTRIES
 for ONEREGISTRYIN in docker.caching.proxy.internal registry-1.docker.io auth.docker.io ${REGISTRIES}; do
@@ -58,10 +58,10 @@ export ALLDOMAINS=${ALLDOMAINS:1} # remove the first comma and export
 
 # Target host interception. Empty by default. Used to intercept outgoing requests
 # from the proxy to the registries.
-touch >/etc/nginx/docker.targetHost.map
+echo -n "" >/etc/nginx/docker.targetHost.map
 
 # Now handle the auth part.
-touch >/etc/nginx/docker.auth.map
+echo -n "" >/etc/nginx/docker.auth.map
 
 # Only configure auth registries if the env var contains values
 if [ "$AUTH_REGISTRIES" ]; then
@@ -104,7 +104,7 @@ CACHE_MAX_SIZE=${CACHE_MAX_SIZE:-32g}
 echo "proxy_cache_path /docker_mirror_cache levels=1:2 max_size=$CACHE_MAX_SIZE inactive=60d keys_zone=cache:10m use_temp_path=off;" >/etc/nginx/conf.d/cache_max_size.conf
 
 # Manifest caching configuration. We generate config based on the environment vars.
-touch >/etc/nginx/nginx.manifest.caching.config.conf
+echo -n "" >/etc/nginx/nginx.manifest.caching.config.conf
 
 [[ "a${ENABLE_MANIFEST_CACHE}" == "atrue" ]] && [[ "a${MANIFEST_CACHE_PRIMARY_REGEX}" != "a" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
     # First tier caching of manifests; configure via MANIFEST_CACHE_PRIMARY_REGEX and MANIFEST_CACHE_PRIMARY_TIME
