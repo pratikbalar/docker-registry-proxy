@@ -23,7 +23,7 @@ echo "-- end resolv"
 
 # Podman adds a "%3" to the end of the last resolver? I don't get it. Strip it out.
 export RESOLVERS=$(sed -e 's/%3//g' /etc/resolv.conf | awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' | sed 's/ *$//g')
-if [ "x${RESOLVERS}" = "x" ]; then
+if [[ "x${RESOLVERS}" = "x" ]]; then
     logErr "Unable to determine DNS resolvers for nginx"
     exit 66
 fi
@@ -38,7 +38,7 @@ done
 
 echo "Final chosen resolver: ${conf}"
 confpath=/etc/nginx/resolvers.conf
-if [ ! -e ${confpath} ]; then
+if [[ ! -e ${confpath} ]]; then
     logInfo "Using auto-determined resolver '${conf}' via '${confpath}'"
     echo "${conf}" >${confpath}
 else
@@ -72,7 +72,7 @@ touch /etc/nginx/docker.targetHost.map
 touch /etc/nginx/docker.auth.map
 
 # Only configure auth registries if the env var contains values
-if [ "${AUTH_REGISTRIES}" ]; then
+if [[ "${AUTH_REGISTRIES}" ]]; then
     # Ref: https://stackoverflow.com/a/47633817/219530
     AUTH_REGISTRIES_DELIMITER=${AUTH_REGISTRIES_DELIMITER:-" "}
     s=${AUTH_REGISTRIES}${AUTH_REGISTRIES_DELIMITER}
