@@ -72,12 +72,12 @@ touch /etc/nginx/docker.targetHost.map
 touch /etc/nginx/docker.auth.map
 
 # Only configure auth registries if the env var contains values
-if [ "$AUTH_REGISTRIES" ]; then
+if [ "${AUTH_REGISTRIES}" ]; then
     # Ref: https://stackoverflow.com/a/47633817/219530
     AUTH_REGISTRIES_DELIMITER=${AUTH_REGISTRIES_DELIMITER:-" "}
     s=${AUTH_REGISTRIES}${AUTH_REGISTRIES_DELIMITER}
     auth_array=()
-    while [[ $s ]]; do
+    while [[ ${s} ]]; do
         auth_array+=("${s%%"$AUTH_REGISTRIES_DELIMITER"*}")
         s=${s#*"$AUTH_REGISTRIES_DELIMITER"}
     done
@@ -88,7 +88,7 @@ if [ "$AUTH_REGISTRIES" ]; then
         s=${ONEREGISTRY}${AUTH_REGISTRY_DELIMITER}
 
         registry_array=()
-        while [[ $s ]]; do
+        while [[ ${s} ]]; do
             registry_array+=("${s%%"$AUTH_REGISTRY_DELIMITER"*}")
             s=${s#*"$AUTH_REGISTRY_DELIMITER"}
         done
@@ -110,7 +110,7 @@ CACHE_MAX_SIZE=${CACHE_MAX_SIZE:-32g}
 
 # The cache directory. This can get huge. Better to use a Docker volume pointing here!
 # Set to 32gb which should be enough
-echo "proxy_cache_path /docker_mirror_cache levels=1:2 max_size=$CACHE_MAX_SIZE inactive=60d keys_zone=cache:10m use_temp_path=off;" >/etc/nginx/conf.d/cache_max_size.conf
+echo "proxy_cache_path /docker_mirror_cache levels=1:2 max_size=${CACHE_MAX_SIZE} inactive=60d keys_zone=cache:10m use_temp_path=off;" >/etc/nginx/conf.d/cache_max_size.conf
 
 # Manifest caching configuration. We generate config based on the environment vars.
 touch /etc/nginx/nginx.manifest.caching.config.conf
