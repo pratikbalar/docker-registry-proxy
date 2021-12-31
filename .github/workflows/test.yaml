@@ -62,17 +62,10 @@ jobs:
             -v $(pwd)/docker_mirror_certs:/ca \
             sanity-check/docker-registry-proxy:latest
 
-      - name: Get the initial logs for the container into a file after 10s
+      - name: Sleep 10
         run: |
           echo "Sleeping 10s..."
           sleep 10
-          docker logs docker_registry_proxy > initial_logs.txt
-
-      - name: Upload artifact initial_logs
-        uses: actions/upload-artifact@v2
-        with:
-          name: initial_logs
-          path: initial_logs.txt
 
       - name: Wait for container to be up
         timeout-minutes: 1
@@ -147,16 +140,6 @@ jobs:
           docker pull alpine:3.6
           docker pull k8s.gcr.io/pause:3.3
 
-      - name: Get the cold cache logs for the container into a file
-        run: |
-          docker logs docker_registry_proxy > cold_cache.txt
-
-      - name: Upload artifact cold_cache
-        uses: actions/upload-artifact@v2
-        with:
-          name: cold_cache
-          path: cold_cache.txt
-
       - name: prune all unused images from docker cache again
         timeout-minutes: 1
         run: |
@@ -172,12 +155,7 @@ jobs:
           docker pull alpine:3.6
           docker pull k8s.gcr.io/pause:3.3
 
-      - name: Get the warm cache docker logs for the container into a file
+      - name: Get the logs
+        if: ${{ always() }}
         run: |
-          docker logs docker_registry_proxy > warm_cache.txt
-
-      - name: Upload artifact warm_cache
-        uses: actions/upload-artifact@v2
-        with:
-          name: warm_cache
-          path: warm_cache.txt
+          docker logs docker_registry_proxy || true
