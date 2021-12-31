@@ -56,7 +56,7 @@ jobs:
 
       - name: Start proxy instance in docker (ENABLE_MANIFEST_CACHE=false)
         run: |
-          docker run -d --rm --name docker_registry_proxy \
+          docker run -d --name docker_registry_proxy \
             -p 0.0.0.0:3128:3128 -e ENABLE_MANIFEST_CACHE=false \
             -v $(pwd)/docker_mirror_cache:/docker_mirror_cache \
             -v $(pwd)/docker_mirror_certs:/ca \
@@ -111,7 +111,7 @@ jobs:
 
       - name: Start proxy instance in docker again (ENABLE_MANIFEST_CACHE=true)
         run: |
-          docker run -d --rm --name docker_registry_proxy \
+          docker run -d --name docker_registry_proxy \
             -p 0.0.0.0:3128:3128 -e ENABLE_MANIFEST_CACHE=true \
             -v $(pwd)/docker_mirror_cache:/docker_mirror_cache \
             -v $(pwd)/docker_mirror_certs:/ca \
