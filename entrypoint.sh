@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 echo "Entrypoint starting."
 
@@ -23,26 +23,26 @@ echo "-- end resolv"
 
 # Podman adds a "%3" to the end of the last resolver? I don't get it. Strip it out.
 export RESOLVERS=$(sed -e 's/%3//g' /etc/resolv.conf | awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' | sed 's/ *$//g')
-if [ "x$RESOLVERS" = "x" ]; then
+if [ "x${RESOLVERS}" = "x" ]; then
     logErr "Unable to determine DNS resolvers for nginx"
     exit 66
 fi
 
-echo "DEBUG, determined RESOLVERS from /etc/resolv.conf: '$RESOLVERS'"
+echo "DEBUG, determined RESOLVERS from /etc/resolv.conf: '${RESOLVERS}'"
 
 conf=""
 for ONE_RESOLVER in ${RESOLVERS}; do
-    echo "Possible resolver: $ONE_RESOLVER"
-    conf="resolver $ONE_RESOLVER; "
+    echo "Possible resolver: ${ONE_RESOLVER}"
+    conf="resolver ${ONE_RESOLVER}; "
 done
 
-echo "Final chosen resolver: $conf"
+echo "Final chosen resolver: ${conf}"
 confpath=/etc/nginx/resolvers.conf
-if [ ! -e $confpath ]; then
-    echo "Using auto-determined resolver '$conf' via '$confpath'"
-    echo "$conf" >$confpath
+if [ ! -e ${confpath} ]; then
+    echo "Using auto-determined resolver '${conf}' via '${confpath}'"
+    echo "${conf}" >${confpath}
 else
-    echo "Not using resolver config, keep existing '$confpath' -- mounted by user?"
+    echo "Not using resolver config, keep existing '${confpath}' -- mounted by user?"
 fi
 
 # The list of SAN (Subject Alternative Names) for which we will create a TLS certificate.
@@ -55,7 +55,7 @@ echo -n "" >/etc/nginx/docker.intercept.map
 # Some hosts/registries are always needed, but others can be configured in env var REGISTRIES
 for ONEREGISTRYIN in docker.caching.proxy.internal registry-1.docker.io auth.docker.io ${REGISTRIES}; do
     ONEREGISTRY=$(echo ${ONEREGISTRYIN} | xargs) # Remove whitespace
-    echo "Adding certificate for registry: $ONEREGISTRY"
+    echo "Adding certificate for registry: ${ONEREGISTRY}"
     ALLDOMAINS="${ALLDOMAINS},DNS:${ONEREGISTRY}"
     echo "${ONEREGISTRY} 127.0.0.1:443;" >>/etc/nginx/docker.intercept.map
 done
@@ -75,7 +75,7 @@ echo -n "" >/etc/nginx/docker.auth.map
 if [ "$AUTH_REGISTRIES" ]; then
     # Ref: https://stackoverflow.com/a/47633817/219530
     AUTH_REGISTRIES_DELIMITER=${AUTH_REGISTRIES_DELIMITER:-" "}
-    s=$AUTH_REGISTRIES$AUTH_REGISTRIES_DELIMITER
+    s=${AUTH_REGISTRIES}${AUTH_REGISTRIES_DELIMITER}
     auth_array=()
     while [[ $s ]]; do
         auth_array+=("${s%%"$AUTH_REGISTRIES_DELIMITER"*}")
@@ -85,7 +85,8 @@ if [ "$AUTH_REGISTRIES" ]; then
     AUTH_REGISTRY_DELIMITER=${AUTH_REGISTRY_DELIMITER:-":"}
 
     for ONEREGISTRY in "${auth_array[@]}"; do
-        s=$ONEREGISTRY$AUTH_REGISTRY_DELIMITER
+        s=${ONEREGISTRY}${AUTH_REGISTRY_DELIMITER}
+
         registry_array=()
         while [[ $s ]]; do
             registry_array+=("${s%%"$AUTH_REGISTRY_DELIMITER"*}")
