@@ -23,7 +23,7 @@ echo "-- end resolv"
 
 # Podman adds a "%3" to the end of the last resolver? I don't get it. Strip it out.
 export RESOLVERS=$(sed -e 's/%3//g' /etc/resolv.conf | awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' | sed 's/ *$//g')
-if [[ "x${RESOLVERS}" = "x" ]]; then
+if [[ "${RESOLVERS}" ]]; then
     logErr "Unable to determine DNS resolvers for nginx"
     exit 66
 fi
@@ -38,7 +38,7 @@ done
 
 echo "Final chosen resolver: ${conf}"
 confpath=/etc/nginx/resolvers.conf
-if [[ ! -e ${confpath} ]]; then
+if [[ ! -f ${confpath} ]]; then
     logInfo "Using auto-determined resolver '${conf}' via '${confpath}'"
     echo "${conf}" >${confpath}
 else
@@ -115,7 +115,7 @@ echo "proxy_cache_path /docker_mirror_cache levels=1:2 max_size=${CACHE_MAX_SIZE
 # Manifest caching configuration. We generate config based on the environment vars.
 touch /etc/nginx/nginx.manifest.caching.config.conf
 
-[[ "a${ENABLE_MANIFEST_CACHE}" == "atrue" ]] && [[ "a${MANIFEST_CACHE_PRIMARY_REGEX}" != "a" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+[[ "${ENABLE_MANIFEST_CACHE}" == true ]] && [[ -z "${MANIFEST_CACHE_PRIMARY_REGEX}" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
     # First tier caching of manifests; configure via MANIFEST_CACHE_PRIMARY_REGEX and MANIFEST_CACHE_PRIMARY_TIME
     location ~ ^/v2/(.*)/manifests/${MANIFEST_CACHE_PRIMARY_REGEX} {
         set \$docker_proxy_request_type "manifest-primary";
@@ -124,7 +124,7 @@ touch /etc/nginx/nginx.manifest.caching.config.conf
     }
 EOD
 
-[[ "a${ENABLE_MANIFEST_CACHE}" == "atrue" ]] && [[ "a${MANIFEST_CACHE_SECONDARY_REGEX}" != "a" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+[[ "${ENABLE_MANIFEST_CACHE}" == true ]] && [[ -z "${MANIFEST_CACHE_SECONDARY_REGEX}" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
     # Secondary tier caching of manifests; configure via MANIFEST_CACHE_SECONDARY_REGEX and MANIFEST_CACHE_SECONDARY_TIME
     location ~ ^/v2/(.*)/manifests/${MANIFEST_CACHE_SECONDARY_REGEX} {
         set \$docker_proxy_request_type "manifest-secondary";
@@ -133,7 +133,7 @@ EOD
     }
 EOD
 
-[[ "a${ENABLE_MANIFEST_CACHE}" == "atrue" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+[[ "${ENABLE_MANIFEST_CACHE}" == true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
     # Default tier caching for manifests. Caches for ${MANIFEST_CACHE_DEFAULT_TIME} (from MANIFEST_CACHE_DEFAULT_TIME)
     location ~ ^/v2/(.*)/manifests/ {
         set \$docker_proxy_request_type "manifest-default";
@@ -142,7 +142,7 @@ EOD
     }
 EOD
 
-[[ "a${ENABLE_MANIFEST_CACHE}" != "atrue" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+[[ "${ENABLE_MANIFEST_CACHE}" != true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
     # Manifest caching is disabled. Enable it with ENABLE_MANIFEST_CACHE=true
     location ~ ^/v2/(.*)/manifests/ {
         set \$docker_proxy_request_type "manifest-default-disabled";
@@ -155,7 +155,7 @@ logInfo "Manifest caching config: ---"
 cat /etc/nginx/nginx.manifest.caching.config.conf
 logInfo "---"
 
-if [[ "a${ALLOW_PUSH}" == "atrue" ]]; then
+if [[ "${ALLOW_PUSH}" == true ]]; then
     cat <<EOF >/etc/nginx/conf.d/allowed.methods.conf
     # allow to upload big layers
     client_max_body_size 0;
@@ -181,7 +181,7 @@ fi
 # normally use non-debug version of nginx
 NGINX_BIN="/usr/sbin/nginx"
 
-if [[ "a${DEBUG}" == "atrue" ]]; then
+if [[ "${DEBUG}" == true ]]; then
     if [[ ! -f /usr/bin/mitmweb ]]; then
         logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 3
@@ -200,7 +200,7 @@ if [[ "a${DEBUG}" == "atrue" ]]; then
     logInfo "Access mitmweb via http://127.0.0.1:8081/ "
 fi
 
-if [[ "a${DEBUG_HUB}" == "atrue" ]]; then
+if [[ "${DEBUG_HUB}" == true ]]; then
     if [[ ! -f /usr/bin/mitmweb ]]; then
         logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 3
@@ -223,7 +223,7 @@ if [[ "a${DEBUG_HUB}" == "atrue" ]]; then
     logInfo "Access mitmweb for outgoing DockerHub requests via http://127.0.0.1:8082/"
 fi
 
-if [[ "a${DEBUG_NGINX}" == "atrue" ]]; then
+if [[ "${DEBUG_NGINX}" == true ]]; then
     if [[ ! -f /usr/sbin/nginx-debug ]]; then
         logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 4
@@ -263,7 +263,7 @@ logInfo "---\n"
 
 # Upstream SSL verification.
 touch /etc/nginx/docker.verify.ssl.conf
-if [[ "a${VERIFY_SSL}" == "atrue" ]]; then
+if [[ "${VERIFY_SSL}" == true ]]; then
     cat <<EOD >/etc/nginx/docker.verify.ssl.conf
     # We actually wanna be secure and avoid mitm attacks.
     # Fitting, since this whole thing is a mitm...
