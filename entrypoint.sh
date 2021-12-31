@@ -28,7 +28,7 @@ if [ "x${RESOLVERS}" = "x" ]; then
     exit 66
 fi
 
-echo "DEBUG, determined RESOLVERS from /etc/resolv.conf: '${RESOLVERS}'"
+logInfo "DEBUG, determined RESOLVERS from /etc/resolv.conf: '${RESOLVERS}'"
 
 conf=""
 for ONE_RESOLVER in ${RESOLVERS}; do
@@ -39,10 +39,10 @@ done
 echo "Final chosen resolver: ${conf}"
 confpath=/etc/nginx/resolvers.conf
 if [ ! -e ${confpath} ]; then
-    echo "Using auto-determined resolver '${conf}' via '${confpath}'"
+    logInfo "Using auto-determined resolver '${conf}' via '${confpath}'"
     echo "${conf}" >${confpath}
 else
-    echo "Not using resolver config, keep existing '${confpath}' -- mounted by user?"
+    logInfo "Not using resolver config, keep existing '${confpath}' -- mounted by user?"
 fi
 
 # The list of SAN (Subject Alternative Names) for which we will create a TLS certificate.
@@ -55,7 +55,7 @@ touch /etc/nginx/docker.intercept.map
 # Some hosts/registries are always needed, but others can be configured in env var REGISTRIES
 for ONEREGISTRYIN in docker.caching.proxy.internal registry-1.docker.io auth.docker.io ${REGISTRIES}; do
     ONEREGISTRY=$(echo ${ONEREGISTRYIN} | xargs) # Remove whitespace
-    echo "Adding certificate for registry: ${ONEREGISTRY}"
+    logInfo "Adding certificate for registry: ${ONEREGISTRY}"
     ALLDOMAINS="${ALLDOMAINS},DNS:${ONEREGISTRY}"
     echo "${ONEREGISTRY} 127.0.0.1:443;" >>/etc/nginx/docker.intercept.map
 done
@@ -96,7 +96,7 @@ if [ "$AUTH_REGISTRIES" ]; then
         AUTH_USER="${registry_array[1]}"
         AUTH_PASS="${registry_array[2]}"
         AUTH_BASE64=$(echo -n ${AUTH_USER}:${AUTH_PASS} | base64 -w0 | xargs)
-        echo "Adding Auth for registry '${AUTH_HOST}' with user '${AUTH_USER}'."
+        logInfo "Adding Auth for registry '${AUTH_HOST}' with user '${AUTH_USER}'."
         echo "\"${AUTH_HOST}\" \"${AUTH_BASE64}\";" >>/etc/nginx/docker.auth.map
     done
 fi
@@ -151,9 +151,9 @@ EOD
     }
 EOD
 
-echo -e "\nManifest caching config: ---\n"
+logInfo "Manifest caching config: ---"
 cat /etc/nginx/nginx.manifest.caching.config.conf
-echo "---"
+logInfo "---"
 
 if [[ "a${ALLOW_PUSH}" == "atrue" ]]; then
     cat <<EOF >/etc/nginx/conf.d/allowed.methods.conf
@@ -183,7 +183,7 @@ NGINX_BIN="/usr/sbin/nginx"
 
 if [[ "a${DEBUG}" == "atrue" ]]; then
     if [[ ! -f /usr/bin/mitmweb ]]; then
-        echo "To debug, you need the -debug version of this image, eg: :latest-debug"
+        logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 3
     fi
 
@@ -191,18 +191,18 @@ if [[ "a${DEBUG}" == "atrue" ]]; then
     echo "        listen 444 ssl default_server;" >/etc/nginx/caching.layer.listen
 
     logErr "Starting in DEBUG MODE (mitmproxy)."
-    echo "Run mitmproxy with reverse pointing to the same certs..."
+    logInfo "Run mitmproxy with reverse pointing to the same certs..."
     mitmweb --no-web-open-browser --set web_host=0.0.0.0 --set confdir=~/.mitmproxy-incoming \
         --set termlog_verbosity=error --set stream_large_bodies=128k --web-port 8081 \
         --set keep_host_header=true --set ssl_insecure=true \
         --mode reverse:https://127.0.0.1:444 --listen-host 0.0.0.0 \
         --listen-port 443 --certs /certs/fullchain_with_key.pem &
-    echo "Access mitmweb via http://127.0.0.1:8081/ "
+    logInfo "Access mitmweb via http://127.0.0.1:8081/ "
 fi
 
 if [[ "a${DEBUG_HUB}" == "atrue" ]]; then
     if [[ ! -f /usr/bin/mitmweb ]]; then
-        echo "To debug, you need the -debug version of this image, eg: :latest-debug"
+        logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 3
     fi
 
@@ -220,23 +220,23 @@ if [[ "a${DEBUG_HUB}" == "atrue" ]]; then
     logErr "Warning, DockerHub outgoing debugging disables upstream SSL verification for all upstreams."
     VERIFY_SSL=false
 
-    echo "Access mitmweb for outgoing DockerHub requests via http://127.0.0.1:8082/ "
+    logInfo "Access mitmweb for outgoing DockerHub requests via http://127.0.0.1:8082/"
 fi
 
 if [[ "a${DEBUG_NGINX}" == "atrue" ]]; then
     if [[ ! -f /usr/sbin/nginx-debug ]]; then
-        echo "To debug, you need the -debug version of this image, eg: :latest-debug"
+        logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 4
     fi
 
-    echo "Starting in DEBUG MODE (nginx)."
+    logInfo "Starting in DEBUG MODE (nginx)."
     echo "error_log  /var/log/nginx/error.log debug;" >/etc/nginx/error.log.debug.warn
     # use debug binary
     NGINX_BIN="/usr/sbin/nginx-debug"
 fi
 
 # Timeout configurations
-echo "" >/etc/nginx/nginx.timeouts.config.conf
+touch /etc/nginx/nginx.timeouts.config.conf
 cat <<EOD >>/etc/nginx/nginx.timeouts.config.conf
   # Timeouts
 
@@ -257,12 +257,12 @@ cat <<EOD >>/etc/nginx/nginx.timeouts.config.conf
   proxy_connect_send_timeout ${PROXY_CONNECT_SEND_TIMEOUT};
 EOD
 
-echo -e "\nTimeout configs: ---"
+logInfo "\nTimeout configs: ---"
 cat /etc/nginx/nginx.timeouts.config.conf
-echo -e "---\n"
+logInfo "---\n"
 
 # Upstream SSL verification.
-echo "" >/etc/nginx/docker.verify.ssl.conf
+touch /etc/nginx/docker.verify.ssl.conf
 if [[ "a${VERIFY_SSL}" == "atrue" ]]; then
     cat <<EOD >/etc/nginx/docker.verify.ssl.conf
     # We actually wanna be secure and avoid mitm attacks.
@@ -272,13 +272,13 @@ if [[ "a${VERIFY_SSL}" == "atrue" ]]; then
     proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
     proxy_ssl_verify_depth 2;
 EOD
-    echo "Upstream SSL certificate verification enabled."
+    logInfo "Upstream SSL certificate verification enabled."
 else
-    echo "Upstream SSL certificate verification is DISABLED."
+    logInfo "Upstream SSL certificate verification is DISABLED."
 fi
 
-echo "Testing nginx config..."
+logInfo "Testing nginx config..."
 ${NGINX_BIN} -t
 
-echo "Starting nginx! Have a nice day."
+logInfo "Starting nginx! Have a nice day."
 ${NGINX_BIN} -g "daemon off;"
