@@ -129,18 +129,15 @@ jobs:
 
       # This can be quite slow, since Github Actions runner Docker comes preloaded with a lot of images.
       - name: Initial prune of all unused images from docker cache (slow)
-        timeout-minutes: 2
         run: |
           docker image prune --all --force
 
       - name: First round of pulls
-        timeout-minutes: 2
         run: |
           docker pull alpine:3.6
           docker pull k8s.gcr.io/pause:3.3
 
       - name: prune all unused images from docker cache again
-        timeout-minutes: 1
         run: |
           docker image prune --all --force
 
@@ -149,7 +146,6 @@ jobs:
           sleep 2
 
       - name: Second round of pulls
-        timeout-minutes: 2
         run: |
           docker pull alpine:3.6
           docker pull k8s.gcr.io/pause:3.3

@@ -5,6 +5,14 @@ echo "Entrypoint starting."
 set -Eeuo pipefail
 trap "echo TRAPed signal" HUP INT QUIT TERM
 
+logInfo() {
+    echo "INFO: $*"
+}
+
+logErr() {
+    echo "ERR: $*" >&2
+}
+
 # configure nginx DNS settings to match host, why must we do that nginx?
 # this leads to a world of problems. ipv6 format being different, etc.
 # below is a collection of hacks contributed over the years.
@@ -14,9 +22,9 @@ cat /etc/resolv.conf
 echo "-- end resolv"
 
 # Podman adds a "%3" to the end of the last resolver? I don't get it. Strip it out.
-export RESOLVERS=$(cat /etc/resolv.conf | sed -e 's/%3//g' | awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' | sed 's/ *$//g')
+export RESOLVERS=$(sed -e 's/%3//g' /etc/resolv.conf | awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' | sed 's/ *$//g')
 if [ "x$RESOLVERS" = "x" ]; then
-    echo "Warning: unable to determine DNS resolvers for nginx" >&2
+    logErr "Unable to determine DNS resolvers for nginx"
     exit 66
 fi
 
@@ -181,7 +189,7 @@ if [[ "a${DEBUG}" == "atrue" ]]; then
     # in debug mode, change caching layer to listen on 444, so that mitmproxy can sit in the middle.
     echo "        listen 444 ssl default_server;" >/etc/nginx/caching.layer.listen
 
-    echo "Starting in DEBUG MODE (mitmproxy)." >&2
+    logErr "Starting in DEBUG MODE (mitmproxy)."
     echo "Run mitmproxy with reverse pointing to the same certs..."
     mitmweb --no-web-open-browser --set web_host=0.0.0.0 --set confdir=~/.mitmproxy-incoming \
         --set termlog_verbosity=error --set stream_large_bodies=128k --web-port 8081 \
@@ -200,7 +208,7 @@ if [[ "a${DEBUG_HUB}" == "atrue" ]]; then
     # in debug hub mode, we remap targetHost to point to mitmproxy below
     echo "\"registry-1.docker.io\" \"127.0.0.1:445\";" >/etc/nginx/docker.targetHost.map
 
-    echo "Debugging outgoing DockerHub connections via mitmproxy on 8082." >&2
+    logErr "Debugging outgoing DockerHub connections via mitmproxy on 8082."
     # this one has keep_host_header=false so we don't need to modify nginx config
     mitmweb --no-web-open-browser --set web_host=0.0.0.0 --set confdir=~/.mitmproxy-outgoing-hub \
         --set termlog_verbosity=error --set stream_large_bodies=128k --web-port 8082 \
@@ -208,7 +216,7 @@ if [[ "a${DEBUG_HUB}" == "atrue" ]]; then
         --mode reverse:https://registry-1.docker.io --listen-host 0.0.0.0 \
         --listen-port 445 --certs /certs/fullchain_with_key.pem &
 
-    echo "Warning, DockerHub outgoing debugging disables upstream SSL verification for all upstreams." >&2
+    logErr "Warning, DockerHub outgoing debugging disables upstream SSL verification for all upstreams."
     VERIFY_SSL=false
 
     echo "Access mitmweb for outgoing DockerHub requests via http://127.0.0.1:8082/ "
