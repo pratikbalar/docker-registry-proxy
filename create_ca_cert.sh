@@ -105,13 +105,13 @@ openssl genrsa -des3 -passout pass:foobar -out web.orig.key 2048 &>/dev/null
 openssl rsa -passin pass:foobar -in web.orig.key -out web.key &>/dev/null
 
 logInfo "Create the signing request, using extensions"
-openssl req -new -key web.key -sha256 -out web.csr -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_WEB}" -reqexts SAN -config <(cat <(printf "[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=${ALLDOMAINS}"))
+openssl req -new -key web.key -sha256 -out web.csr -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_WEB}" -reqexts SAN -config <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${ALLDOMAINS}")
 
 [[ ${DEBUG} -gt 0 ]] && logInfo "Show the singing request, to make sure extensions are there"
 [[ ${DEBUG} -gt 0 ]] && openssl req -in web.csr -noout -text
 
 logInfo "Sign the request, using the intermediate cert and key"
-openssl x509 -req -days 365 -in web.csr -CA ia.crt -CAkey ia.key -out web.crt -passin pass:foobar -extensions SAN -extfile <(cat <(printf "[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=${ALLDOMAINS}")) &>/dev/null
+openssl x509 -req -days 365 -in web.csr -CA ia.crt -CAkey ia.key -out web.crt -passin pass:foobar -extensions SAN -extfile <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${ALLDOMAINS}") &>/dev/null
 
 [[ ${DEBUG} -gt 0 ]] && logInfo "Show the final cert details"
 [[ ${DEBUG} -gt 0 ]] && openssl x509 -noout -text -in web.crt
