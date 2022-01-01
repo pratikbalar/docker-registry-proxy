@@ -16,10 +16,6 @@ logErr() {
 function creatCa() {
     declare -i DEBUG=0
 
-    logInfo() {
-        echo "INFO: $*"
-    }
-
     PROJ_NAME=DockerMirrorBox
     logInfo "Will create certificate with names ${1}"
 
@@ -53,8 +49,18 @@ function creatCa() {
         openssl genrsa -des3 -passout pass:foobar -out "${CA_KEY_FILE}" 4096
 
         logInfo "generate CA cert with key and self sign it: ${CAID}"
-        openssl req -new -x509 -days 1300 -sha256 -key "${CA_KEY_FILE}" -out "${CA_CRT_FILE}" -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_CA}" -extensions IA -config <(
-            cat <<-EOF
+        openssl req \
+            -new \
+            -x509 \
+            -days 1300 \
+            -sha256 \
+            -key "${CA_KEY_FILE}" \
+            -out "${CA_CRT_FILE}" \
+            -passin pass:foobar \
+            -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_CA}" \
+            -extensions IA \
+            -config <(
+                cat <<-EOF
 [req]
 distinguished_name = dn
 [dn]
@@ -63,7 +69,7 @@ basicConstraints = critical,CA:TRUE
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 subjectKeyIdentifier = hash
 EOF
-        )
+            )
         if [[ "${DEBUG}" ]]; then
             logInfo "show the CA cert details"
             openssl x509 -noout -text -in "${CA_CRT_FILE}"
@@ -191,7 +197,7 @@ done
 
 # Clean the list and generate certificates.
 # export ALLDOMAINS=${ALLDOMAINS:1} # remove the first comma and export
-creatCa "${ALLDOMAINS:1}"              # This uses ALLDOMAINS to generate the certificates.
+creatCa "${ALLDOMAINS:1}" # This uses ALLDOMAINS to generate the certificates.
 
 # Target host interception. Empty by default. Used to intercept outgoing requests
 # from the proxy to the registries.
