@@ -126,7 +126,8 @@ if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_PRIMARY_REGEX}"
 EOD
 fi
 
-[[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_SECONDARY_REGEX}" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_SECONDARY_REGEX}" ]]; then
+    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Secondary tier caching of manifests; configure via MANIFEST_CACHE_SECONDARY_REGEX and MANIFEST_CACHE_SECONDARY_TIME
     location ~ ^/v2/(.*)/manifests/${MANIFEST_CACHE_SECONDARY_REGEX} {
         set \$docker_proxy_request_type "manifest-secondary";
@@ -134,6 +135,7 @@ fi
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
+fi
 
 [[ "${ENABLE_MANIFEST_CACHE}" == true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
     # Default tier caching for manifests. Caches for ${MANIFEST_CACHE_DEFAULT_TIME} (from MANIFEST_CACHE_DEFAULT_TIME)
@@ -259,9 +261,9 @@ cat <<EOD >>/etc/nginx/nginx.timeouts.config.conf
   proxy_connect_send_timeout ${PROXY_CONNECT_SEND_TIMEOUT};
 EOD
 
-logInfo "\nTimeout configs: ---"
+logInfo "Timeout configs: ---"
 cat /etc/nginx/nginx.timeouts.config.conf
-logInfo "---\n"
+logInfo "---"
 
 # Upstream SSL verification.
 touch /etc/nginx/docker.verify.ssl.conf
