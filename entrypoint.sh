@@ -108,8 +108,18 @@ EOF
     fi
 
     logInfo "Sign the IA request with the CA cert and key, producing the IA cert"
-    openssl x509 -req -days 730 -in ia.csr -CA "${CA_CRT_FILE}" -CAkey "${CA_KEY_FILE}" -CAserial "${CA_SRL_FILE}" -out ia.crt -passin pass:foobar -extensions IA -extfile <(
-        cat <<-EOF
+    openssl x509 \
+        -req \
+        -days 730 \
+        -in ia.csr \
+        -CA "${CA_CRT_FILE}" \
+        -CAkey "${CA_KEY_FILE}" \
+        -CAserial "${CA_SRL_FILE}" \
+        -out ia.crt \
+        -passin pass:foobar \
+        -extensions IA \
+        -extfile <(
+            cat <<-EOF
 [req]
 distinguished_name = dn
 [dn]
@@ -118,7 +128,7 @@ basicConstraints = critical,CA:TRUE,pathlen:0
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 subjectKeyIdentifier = hash
 EOF
-    ) &>/dev/null
+        ) &>/dev/null
 
     if [[ "${DEBUG}" ]]; then
         logInfo "show the IA cert details"
