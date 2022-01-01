@@ -137,7 +137,8 @@ if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_SECONDARY_REGEX
 EOD
 fi
 
-[[ "${ENABLE_MANIFEST_CACHE}" == true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+if [[ "${ENABLE_MANIFEST_CACHE}" == true ]]; then
+    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Default tier caching for manifests. Caches for ${MANIFEST_CACHE_DEFAULT_TIME} (from MANIFEST_CACHE_DEFAULT_TIME)
     location ~ ^/v2/(.*)/manifests/ {
         set \$docker_proxy_request_type "manifest-default";
@@ -145,6 +146,7 @@ fi
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
+fi
 
 [[ "${ENABLE_MANIFEST_CACHE}" != true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
     # Manifest caching is disabled. Enable it with ENABLE_MANIFEST_CACHE=true

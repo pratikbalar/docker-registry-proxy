@@ -11,7 +11,6 @@ jobs:
   sanity-check:
     runs-on: ubuntu-latest
     steps:
-
       - name: Get machine's first IPv4 address for eth0
         id: ip
         run: |
@@ -39,7 +38,7 @@ jobs:
           tags: sanity-check/docker-registry-proxy:latest
           load: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max          # this only reads from the cache
+          cache-to: type=gha,mode=max # this only reads from the cache
 
       - name: Start proxy instance in docker (ENABLE_MANIFEST_CACHE=false)
         run: |
@@ -49,13 +48,8 @@ jobs:
             -v $(pwd)/docker_mirror_certs:/ca \
             sanity-check/docker-registry-proxy:latest
 
-      - name: Sleep 10
-        run: |
-          echo "Sleeping 10s..."
-          sleep 10
-
       - name: Wait for container to be up
-        timeout-minutes: 1
+        timeout-minutes: 2
         run: |
           declare -i IS_UP=0
           while [[ $IS_UP -lt 1 ]]; do
@@ -64,6 +58,11 @@ jobs:
             sleep 1
           done
           echo "Container is up..."
+
+      - name: Sleep to startup nginx
+        run: |
+          echo "Sleeping 10s..."
+          sleep 20
 
       - name: Grab the CA cert from running container via curl
         run: |
@@ -87,12 +86,9 @@ jobs:
           Environment="HTTPS_PROXY=http://${{ steps.ip.outputs.ETHER }}:3128/"
           EOD
 
-      - name: Reload systemd from disk
+      - name: Reload systemd from disk & dockerd via systemd
         run: |
           sudo systemctl daemon-reload
-
-      - name: Restart dockerd via systemd
-        run: |
           sudo systemctl restart docker.service
 
       - name: Start proxy instance in docker again (ENABLE_MANIFEST_CACHE=true)
