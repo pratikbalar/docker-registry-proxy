@@ -113,7 +113,8 @@ jobs:
       # This can be quite slow, since Github Actions runner Docker comes preloaded with a lot of images.
       - name: Initial prune of all unused images from docker cache (slow)
         run: |
-          docker image prune --all --force
+          docker rmi -f alpine:3.6
+          docker rmi -f k8s.gcr.io/pause:3.3
 
       - name: First round of pulls
         run: |
@@ -130,8 +131,8 @@ jobs:
 
       - name: Second round of pulls
         run: |
-          docker pull alpine:3.6
-          docker pull k8s.gcr.io/pause:3.3
+          docker rmi -f alpine:3.6
+          docker rmi -f k8s.gcr.io/pause:3.3
 
       - name: Get the logs
         if: ${{ always() }}

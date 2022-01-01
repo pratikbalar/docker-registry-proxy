@@ -54,7 +54,7 @@ touch /etc/nginx/docker.intercept.map
 
 # Some hosts/registries are always needed, but others can be configured in env var REGISTRIES
 for ONEREGISTRYIN in docker.caching.proxy.internal registry-1.docker.io auth.docker.io ${REGISTRIES}; do
-    ONEREGISTRY=$(echo ${ONEREGISTRYIN} | xargs) # Remove whitespace
+    ONEREGISTRY=$(echo "${ONEREGISTRYIN}" | xargs) # Remove whitespace
     logInfo "Adding certificate for registry: ${ONEREGISTRY}"
     ALLDOMAINS="${ALLDOMAINS},DNS:${ONEREGISTRY}"
     echo "${ONEREGISTRY} 127.0.0.1:443;" >>/etc/nginx/docker.intercept.map
@@ -115,8 +115,9 @@ echo "proxy_cache_path /docker_mirror_cache levels=1:2 max_size=${CACHE_MAX_SIZE
 # Manifest caching configuration. We generate config based on the environment vars.
 touch /etc/nginx/nginx.manifest.caching.config.conf
 
-if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_PRIMARY_REGEX}" ]]; then
-    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
+if [[ "${ENABLE_MANIFEST_CACHE}" == true ]]; then
+    if [[ -n "${MANIFEST_CACHE_PRIMARY_REGEX}" ]]; then
+        cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # First tier caching of manifests; configure via MANIFEST_CACHE_PRIMARY_REGEX and MANIFEST_CACHE_PRIMARY_TIME
     location ~ ^/v2/(.*)/manifests/${MANIFEST_CACHE_PRIMARY_REGEX} {
         set \$docker_proxy_request_type "manifest-primary";
@@ -124,10 +125,9 @@ if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_PRIMARY_REGEX}"
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
-fi
-
-if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_SECONDARY_REGEX}" ]]; then
-    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
+    fi
+    if [[ -n "${MANIFEST_CACHE_SECONDARY_REGEX}" ]]; then
+        cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Secondary tier caching of manifests; configure via MANIFEST_CACHE_SECONDARY_REGEX and MANIFEST_CACHE_SECONDARY_TIME
     location ~ ^/v2/(.*)/manifests/${MANIFEST_CACHE_SECONDARY_REGEX} {
         set \$docker_proxy_request_type "manifest-secondary";
@@ -135,9 +135,7 @@ if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_SECONDARY_REGEX
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
-fi
-
-if [[ "${ENABLE_MANIFEST_CACHE}" == true ]]; then
+    fi
     cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Default tier caching for manifests. Caches for ${MANIFEST_CACHE_DEFAULT_TIME} (from MANIFEST_CACHE_DEFAULT_TIME)
     location ~ ^/v2/(.*)/manifests/ {
@@ -146,9 +144,7 @@ if [[ "${ENABLE_MANIFEST_CACHE}" == true ]]; then
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
-fi
-
-if [[ "${ENABLE_MANIFEST_CACHE}" != true ]]; then
+else
     cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Manifest caching is disabled. Enable it with ENABLE_MANIFEST_CACHE=true
     location ~ ^/v2/(.*)/manifests/ {
@@ -229,9 +225,6 @@ if [[ "${DEBUG_HUB}" == true ]]; then
     VERIFY_SSL=false
 
     logInfo "Access mitmweb for outgoing DockerHub requests via http://127.0.0.1:8082/"
-fi
-
-if [[ "${DEBUG_NGINX}" == true ]]; then
     if [[ ! -f /usr/sbin/nginx-debug ]]; then
         logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 4
