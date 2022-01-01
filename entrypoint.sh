@@ -81,7 +81,7 @@ function creatCa() {
         -passin pass:foobar \
         -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_IA}" \
         -reqexts IA \
-        -config <(pritnf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE,pathlen:0\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash')
+        -config <(printf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE,pathlen:0\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash')
 
     if [[ "${DEBUG}" ]]; then
         logInfo "Show the singing request, to make sure extensions are there"
@@ -99,7 +99,7 @@ function creatCa() {
         -out ia.crt \
         -passin pass:foobar \
         -extensions IA \
-        -extfile <(pritnf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE,pathlen:0\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash') &>/dev/null
+        -extfile <(printf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE,pathlen:0\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash') &>/dev/null
 
     if [[ "${DEBUG}" ]]; then
         logInfo "show the IA cert details"
