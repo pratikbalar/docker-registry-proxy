@@ -116,7 +116,7 @@ echo "proxy_cache_path /docker_mirror_cache levels=1:2 max_size=${CACHE_MAX_SIZE
 touch /etc/nginx/nginx.manifest.caching.config.conf
 
 if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_PRIMARY_REGEX}" ]]; then
-cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # First tier caching of manifests; configure via MANIFEST_CACHE_PRIMARY_REGEX and MANIFEST_CACHE_PRIMARY_TIME
     location ~ ^/v2/(.*)/manifests/${MANIFEST_CACHE_PRIMARY_REGEX} {
         set \$docker_proxy_request_type "manifest-primary";
