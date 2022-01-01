@@ -148,7 +148,8 @@ if [[ "${ENABLE_MANIFEST_CACHE}" == true ]]; then
 EOD
 fi
 
-[[ "${ENABLE_MANIFEST_CACHE}" != true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+if [[ "${ENABLE_MANIFEST_CACHE}" != true ]]; then
+    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Manifest caching is disabled. Enable it with ENABLE_MANIFEST_CACHE=true
     location ~ ^/v2/(.*)/manifests/ {
         set \$docker_proxy_request_type "manifest-default-disabled";
@@ -156,6 +157,7 @@ fi
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
+fi
 
 logInfo "Manifest caching config: ---"
 cat /etc/nginx/nginx.manifest.caching.config.conf
