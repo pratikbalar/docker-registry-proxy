@@ -16,6 +16,10 @@ logErr() {
 function creatCa() {
     declare -i DEBUG=0
 
+    logInfo() {
+        echo "INFO: $*"
+    }
+
     PROJ_NAME=DockerMirrorBox
     logInfo "Will create certificate with names ${1}"
 
@@ -49,17 +53,17 @@ function creatCa() {
         openssl genrsa -des3 -passout pass:foobar -out "${CA_KEY_FILE}" 4096
 
         logInfo "generate CA cert with key and self sign it: ${CAID}"
-        openssl req \
-            -new \
-            -x509 \
-            -days 1300 \
-            -sha256 \
-            -key "${CA_KEY_FILE}" \
-            -out "${CA_CRT_FILE}" \
-            -passin pass:foobar \
-            -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_CA}" \
-            -extensions IA \
-            -config <(printf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash')
+        openssl req -new -x509 -days 1300 -sha256 -key "${CA_KEY_FILE}" -out "${CA_CRT_FILE}" -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_CA}" -extensions IA -config <(
+            cat <<-EOF
+[req]
+distinguished_name = dn
+[dn]
+[IA]
+basicConstraints = critical,CA:TRUE
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+subjectKeyIdentifier = hash
+EOF
+        )
         if [[ "${DEBUG}" ]]; then
             logInfo "show the CA cert details"
             openssl x509 -noout -text -in "${CA_CRT_FILE}"
@@ -73,15 +77,8 @@ function creatCa() {
     openssl genrsa -des3 -passout pass:foobar -out ia.key 4096 &>/dev/null
 
     logInfo "Create a signing request for the IA: ${CAID}"
-    openssl req \
-        -new \
-        -key ia.key \
-        -out ia.csr \
-        -passin pass:foobar \
-        -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_IA}" \
-        -reqexts IA \
-        -config <(
-            cat <<-EOF
+    openssl req -new -key ia.key -out ia.csr -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_IA}" -reqexts IA -config <(
+        cat <<-EOF
 [req]
 distinguished_name = dn
 [dn]
@@ -90,7 +87,7 @@ basicConstraints = critical,CA:TRUE,pathlen:0
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 subjectKeyIdentifier = hash
 EOF
-        )
+    )
 
     if [[ "${DEBUG}" ]]; then
         logInfo "Show the singing request, to make sure extensions are there"
@@ -98,17 +95,17 @@ EOF
     fi
 
     logInfo "Sign the IA request with the CA cert and key, producing the IA cert"
-    openssl x509 \
-        -req \
-        -days 730 \
-        -in ia.csr \
-        -CA "${CA_CRT_FILE}" \
-        -CAkey "${CA_KEY_FILE}" \
-        -CAserial "${CA_SRL_FILE}" \
-        -out ia.crt \
-        -passin pass:foobar \
-        -extensions IA \
-        -extfile <(printf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE,pathlen:0\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash') &>/dev/null
+    openssl x509 -req -days 730 -in ia.csr -CA "${CA_CRT_FILE}" -CAkey "${CA_KEY_FILE}" -CAserial "${CA_SRL_FILE}" -out ia.crt -passin pass:foobar -extensions IA -extfile <(
+        cat <<-EOF
+[req]
+distinguished_name = dn
+[dn]
+[IA]
+basicConstraints = critical,CA:TRUE,pathlen:0
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+subjectKeyIdentifier = hash
+EOF
+    ) &>/dev/null
 
     if [[ "${DEBUG}" ]]; then
         logInfo "show the IA cert details"
@@ -123,15 +120,7 @@ EOF
     openssl rsa -passin pass:foobar -in web.orig.key -out web.key &>/dev/null
 
     logInfo "Create the signing request, using extensions"
-    openssl req \
-        -new \
-        -key web.key \
-        -sha256 \
-        -out web.csr \
-        -passin pass:foobar \
-        -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_WEB}" \
-        -reqexts SAN \
-        -config <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${1}")
+    openssl req -new -key web.key -sha256 -out web.csr -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_WEB}" -reqexts SAN -config <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${1}")
 
     if [[ "${DEBUG}" ]]; then
         logInfo "Show the singing request, to make sure extensions are there"
@@ -139,16 +128,7 @@ EOF
     fi
 
     logInfo "Sign the request, using the intermediate cert and key"
-    openssl x509 \
-        -req \
-        -days 365 \
-        -in web.csr \
-        -CA ia.crt \
-        -CAkey ia.key \
-        -out web.crt \
-        -passin pass:foobar \
-        -extensions SAN \
-        -extfile <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${1}") &>/dev/null
+    openssl x509 -req -days 365 -in web.csr -CA ia.crt -CAkey ia.key -out web.crt -passin pass:foobar -extensions SAN -extfile <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${1}") &>/dev/null
 
     if [[ "${DEBUG}" ]]; then
         logInfo "Show the final cert details"
@@ -211,7 +191,7 @@ done
 
 # Clean the list and generate certificates.
 # export ALLDOMAINS=${ALLDOMAINS:1} # remove the first comma and export
-creatCa "${ALLDOMAINS:1}" # This uses ALLDOMAINS to generate the certificates.
+creatCa "${ALLDOMAINS:1}"              # This uses ALLDOMAINS to generate the certificates.
 
 # Target host interception. Empty by default. Used to intercept outgoing requests
 # from the proxy to the registries.
@@ -334,7 +314,7 @@ fi
 # normally use non-debug version of nginx
 NGINX_BIN="/usr/sbin/nginx"
 
-if [[ "${DEBUG}" ]]; then
+if [[ "${DEBUG}" == true ]]; then
     if [[ ! -f /usr/bin/mitmweb ]]; then
         logErr "To debug, you need the -debug version of this image, eg: :latest-debug"
         exit 3
