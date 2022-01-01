@@ -126,7 +126,8 @@ if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_PRIMARY_REGEX}"
 EOD
 fi
 
-[[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_SECONDARY_REGEX}" ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+if [[ "${ENABLE_MANIFEST_CACHE}" == true && -n "${MANIFEST_CACHE_SECONDARY_REGEX}" ]]; then
+    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Secondary tier caching of manifests; configure via MANIFEST_CACHE_SECONDARY_REGEX and MANIFEST_CACHE_SECONDARY_TIME
     location ~ ^/v2/(.*)/manifests/${MANIFEST_CACHE_SECONDARY_REGEX} {
         set \$docker_proxy_request_type "manifest-secondary";
@@ -134,8 +135,10 @@ fi
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
+fi
 
-[[ "${ENABLE_MANIFEST_CACHE}" == true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+if [[ "${ENABLE_MANIFEST_CACHE}" == true ]]; then
+    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Default tier caching for manifests. Caches for ${MANIFEST_CACHE_DEFAULT_TIME} (from MANIFEST_CACHE_DEFAULT_TIME)
     location ~ ^/v2/(.*)/manifests/ {
         set \$docker_proxy_request_type "manifest-default";
@@ -143,8 +146,10 @@ EOD
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
+fi
 
-[[ "${ENABLE_MANIFEST_CACHE}" != true ]] && cat <<EOD >>/etc/nginx/nginx.manifest.caching.config.conf
+if [[ "${ENABLE_MANIFEST_CACHE}" != true ]]; then
+    cat >>/etc/nginx/nginx.manifest.caching.config.conf <<EOD
     # Manifest caching is disabled. Enable it with ENABLE_MANIFEST_CACHE=true
     location ~ ^/v2/(.*)/manifests/ {
         set \$docker_proxy_request_type "manifest-default-disabled";
@@ -152,6 +157,7 @@ EOD
         include "/etc/nginx/nginx.manifest.stale.conf";
     }
 EOD
+fi
 
 logInfo "Manifest caching config: ---"
 cat /etc/nginx/nginx.manifest.caching.config.conf
@@ -166,7 +172,7 @@ if [[ "${ALLOW_PUSH}" == true ]]; then
     proxy_cache_methods GET;
 EOF
 else
-    cat <<'EOF' >/etc/nginx/conf.d/allowed.methods.conf
+    cat >/etc/nginx/conf.d/allowed.methods.conf<<EOF
     # Block POST/PUT/DELETE. Don't use this proxy for pushing.
     if ($request_method = POST) {
         return 405 "POST method is not allowed";
