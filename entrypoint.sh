@@ -59,17 +59,8 @@ function creatCa() {
             -passin pass:foobar \
             -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_CA}" \
             -extensions IA \
-            -config <(
-                cat <<-EOF
-[req]
-distinguished_name = dn
-[dn]
-[IA]
-basicConstraints = critical,CA:TRUE
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
-subjectKeyIdentifier = hash
-EOF
-            )
+            -config <(printf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash')
+
         if [[ "${DEBUG}" ]]; then
             logInfo "show the CA cert details"
             openssl x509 -noout -text -in "${CA_CRT_FILE}"
@@ -90,17 +81,7 @@ EOF
         -passin pass:foobar \
         -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_IA}" \
         -reqexts IA \
-        -config <(
-            cat <<-EOF
-[req]
-distinguished_name = dn
-[dn]
-[IA]
-basicConstraints = critical,CA:TRUE,pathlen:0
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
-subjectKeyIdentifier = hash
-EOF
-        )
+        -config <(pritnf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE,pathlen:0\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash')
 
     if [[ "${DEBUG}" ]]; then
         logInfo "Show the singing request, to make sure extensions are there"
@@ -118,17 +99,7 @@ EOF
         -out ia.crt \
         -passin pass:foobar \
         -extensions IA \
-        -extfile <(
-            cat <<-EOF
-[req]
-distinguished_name = dn
-[dn]
-[IA]
-basicConstraints = critical,CA:TRUE,pathlen:0
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
-subjectKeyIdentifier = hash
-EOF
-        ) &>/dev/null
+        -extfile <(pritnf '[req]\ndistinguished_name = dn\n[dn]\n[IA]\nbasicConstraints = critical,CA:TRUE,pathlen:0\nkeyUsage = critical, digitalSignature, cRLSign, keyCertSign\nsubjectKeyIdentifier = hash') &>/dev/null
 
     if [[ "${DEBUG}" ]]; then
         logInfo "show the IA cert details"
