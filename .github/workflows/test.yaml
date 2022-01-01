@@ -111,7 +111,7 @@ jobs:
           echo "Container is up again..."
 
       # This can be quite slow, since Github Actions runner Docker comes preloaded with a lot of images.
-      - name: Initial prune of all unused images from docker cache (slow)
+      - name: Remove images
         run: |
           docker rmi -f alpine:3.6
           docker rmi -f k8s.gcr.io/pause:3.3
@@ -121,18 +121,14 @@ jobs:
           docker pull alpine:3.6
           docker pull k8s.gcr.io/pause:3.3
 
-      - name: prune all unused images from docker cache again
+      - name: Remove images 2
         run: |
-          docker image prune --all --force
+          docker rmi -f alpine:3.6
+          docker rmi -f k8s.gcr.io/pause:3.3
 
       - name: sleep 2s to allow cache to stale a bit
         run: |
           sleep 2
-
-      - name: Second round of pulls
-        run: |
-          docker rmi -f alpine:3.6
-          docker rmi -f k8s.gcr.io/pause:3.3
 
       - name: Get the logs
         if: ${{ always() }}
