@@ -83,8 +83,15 @@ EOF
     openssl genrsa -des3 -passout pass:foobar -out ia.key 4096 &>/dev/null
 
     logInfo "Create a signing request for the IA: ${CAID}"
-    openssl req -new -key ia.key -out ia.csr -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_IA}" -reqexts IA -config <(
-        cat <<-EOF
+    openssl req \
+        -new \
+        -key ia.key \
+        -out ia.csr \
+        -passin pass:foobar \
+        -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_IA}" \
+        -reqexts IA \
+        -config <(
+            cat <<-EOF
 [req]
 distinguished_name = dn
 [dn]
@@ -93,7 +100,7 @@ basicConstraints = critical,CA:TRUE,pathlen:0
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 subjectKeyIdentifier = hash
 EOF
-    )
+        )
 
     if [[ "${DEBUG}" ]]; then
         logInfo "Show the singing request, to make sure extensions are there"
