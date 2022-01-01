@@ -186,9 +186,9 @@ EOF
 # this leads to a world of problems. ipv6 format being different, etc.
 # below is a collection of hacks contributed over the years.
 
-echo "-- resolv.conf:"
+logInfo "-- resolv.conf:"
 cat /etc/resolv.conf
-echo "-- end resolv"
+logInfo "-- end resolv"
 
 # Podman adds a "%3" to the end of the last resolver? I don't get it. Strip it out.
 RESOLVERS=$(sed -e 's/%3//g' /etc/resolv.conf | awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' | sed 's/ *$//g')
@@ -201,11 +201,11 @@ logInfo "DEBUG, determined RESOLVERS from /etc/resolv.conf: '${RESOLVERS}'"
 
 conf=""
 for RESOLVER in ${RESOLVERS}; do
-    echo "Possible resolver: ${RESOLVER}"
+    logInfo "Possible resolver: ${RESOLVER}"
     conf="resolver ${RESOLVER}; "
 done
 
-echo "Final chosen resolver: ${conf}"
+logInfo "Final chosen resolver: ${conf}"
 confpath="/etc/nginx/resolvers.conf"
 if [[ ! -f ${confpath} ]]; then
     logInfo "Using auto-determined resolver '${conf}' via '${confpath}'"
@@ -264,9 +264,9 @@ if [[ "${AUTH_REGISTRIES}" ]]; then
         AUTH_HOST="${registry_array[0]}"
         AUTH_USER="${registry_array[1]}"
         AUTH_PASS="${registry_array[2]}"
-        AUTH_BASE64=$(echo -n ${AUTH_USER}:${AUTH_PASS} | base64 -w0 | xargs)
+        AUTH_BASE64=$(echo -n "${AUTH_USER}:${AUTH_PASS}" | base64 -w0 | xargs)
         logInfo "Adding Auth for registry '${AUTH_HOST}' with user '${AUTH_USER}'."
-        echo "\"${AUTH_HOST}\" \"${AUTH_BASE64}\";" >>/etc/nginx/docker.auth.map
+        printf '"%s" "%s";' "${AUTH_HOST}" "${AUTH_BASE64}" >>/etc/nginx/docker.auth.map
     done
 fi
 
@@ -380,7 +380,7 @@ if [[ "${DEBUG_HUB}" == true ]]; then
     fi
 
     # in debug hub mode, we remap targetHost to point to mitmproxy below
-    echo "\"registry-1.docker.io\" \"127.0.0.1:445\";" >/etc/nginx/docker.targetHost.map
+    echo '"registry-1.docker.io" "127.0.0.1:445";' >/etc/nginx/docker.targetHost.map
 
     logErr "Debugging outgoing DockerHub connections via mitmproxy on 8082."
     # this one has keep_host_header=false so we don't need to modify nginx config
