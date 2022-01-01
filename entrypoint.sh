@@ -31,13 +31,13 @@ fi
 logInfo "DEBUG, determined RESOLVERS from /etc/resolv.conf: '${RESOLVERS}'"
 
 conf=""
-for ONE_RESOLVER in ${RESOLVERS}; do
-    echo "Possible resolver: ${ONE_RESOLVER}"
-    conf="resolver ${ONE_RESOLVER}; "
+for RESOLVER in ${RESOLVERS}; do
+    echo "Possible resolver: ${RESOLVER}"
+    conf="resolver ${RESOLVER}; "
 done
 
 echo "Final chosen resolver: ${conf}"
-confpath=/etc/nginx/resolvers.conf
+confpath="/etc/nginx/resolvers.conf"
 if [[ ! -f ${confpath} ]]; then
     logInfo "Using auto-determined resolver '${conf}' via '${confpath}'"
     echo "${conf}" >${confpath}
