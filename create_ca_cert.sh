@@ -53,8 +53,10 @@ subjectKeyIdentifier = hash
 EOF
     )
 
-    [[ ${DEBUG} -gt 0 ]] && logInfo "show the CA cert details"
-    [[ ${DEBUG} -gt 0 ]] && openssl x509 -noout -text -in "${CA_CRT_FILE}"
+    if [[ "${DEBUG}" ]]; then
+        logInfo "show the CA cert details"
+        openssl x509 -noout -text -in "${CA_CRT_FILE}"
+    fi
 
     echo 01 >"${CA_SRL_FILE}"
 
@@ -78,8 +80,10 @@ subjectKeyIdentifier = hash
 EOF
 )
 
-[[ ${DEBUG} -gt 0 ]] && logInfo "Show the singing request, to make sure extensions are there"
-[[ ${DEBUG} -gt 0 ]] && openssl req -in ia.csr -noout -text
+if [[ "${DEBUG}" ]]; then
+    logInfo "Show the singing request, to make sure extensions are there"
+    openssl req -in ia.csr -noout -text
+fi
 
 logInfo "Sign the IA request with the CA cert and key, producing the IA cert"
 openssl x509 -req -days 730 -in ia.csr -CA "${CA_CRT_FILE}" -CAkey "${CA_KEY_FILE}" -CAserial "${CA_SRL_FILE}" -out ia.crt -passin pass:foobar -extensions IA -extfile <(
@@ -94,8 +98,10 @@ subjectKeyIdentifier = hash
 EOF
 ) &>/dev/null
 
-[[ ${DEBUG} -gt 0 ]] && logInfo "show the IA cert details"
-[[ ${DEBUG} -gt 0 ]] && openssl x509 -noout -text -in ia.crt
+if [[ "${DEBUG}" ]]; then
+    logInfo "show the IA cert details"
+    openssl x509 -noout -text -in ia.crt
+fi
 
 logInfo "Initialize the serial number for signed certificates"
 echo 01 >ia.srl
@@ -107,14 +113,18 @@ openssl rsa -passin pass:foobar -in web.orig.key -out web.key &>/dev/null
 logInfo "Create the signing request, using extensions"
 openssl req -new -key web.key -sha256 -out web.csr -passin pass:foobar -subj "/C=NL/ST=Noord Holland/L=Amsterdam/O=ME/OU=IT/CN=${CN_WEB}" -reqexts SAN -config <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${ALLDOMAINS}")
 
-[[ ${DEBUG} -gt 0 ]] && logInfo "Show the singing request, to make sure extensions are there"
-[[ ${DEBUG} -gt 0 ]] && openssl req -in web.csr -noout -text
+if [[ "${DEBUG}" ]]; then
+    logInfo "Show the singing request, to make sure extensions are there"
+    openssl req -in web.csr -noout -text
+fi
 
 logInfo "Sign the request, using the intermediate cert and key"
 openssl x509 -req -days 365 -in web.csr -CA ia.crt -CAkey ia.key -out web.crt -passin pass:foobar -extensions SAN -extfile <(printf '[req]\ndistinguished_name = dn\n[dn]\n[SAN]\nsubjectAltName=%s' "${ALLDOMAINS}") &>/dev/null
 
-[[ ${DEBUG} -gt 0 ]] && logInfo "Show the final cert details"
-[[ ${DEBUG} -gt 0 ]] && openssl x509 -noout -text -in web.crt
+if [[ "${DEBUG}" ]]; then
+    logInfo "Show the final cert details"
+    openssl x509 -noout -text -in web.crt
+fi
 
 logInfo "Concatenating fullchain.pem..."
 cat web.crt ia.crt "${CA_CRT_FILE}" >fullchain.pem
